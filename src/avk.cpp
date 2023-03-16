@@ -3801,6 +3801,79 @@ namespace avk
 		return cachedSets;
 	}
 
+	std::vector<descriptor_set> descriptor_cache_t::get_or_create_descriptor_sets(std::vector<binding_data>& aBindings)
+	{
+		std::vector<binding_data> orderedBindings;
+		uint32_t minSetId = std::numeric_limits<uint32_t>::max();
+		uint32_t maxSetId = std::numeric_limits<uint32_t>::min();
+
+		// Step 1: order the bindings
+		for (auto& b : aBindings) {
+			minSetId = std::min(minSetId, b.mSetId);
+			maxSetId = std::max(maxSetId, b.mSetId);
+			auto it = std::lower_bound(std::begin(orderedBindings), std::end(orderedBindings), b); // use operator<
+			orderedBindings.insert(it, b);
+		}
+
+		std::vector<std::reference_wrapper<const descriptor_set_layout>> layouts;
+		std::vector<descriptor_set> preparedSets;
+		std::vector<descriptor_set> cachedSets;
+		std::vector<bool>           validSets;
+
+		// Step 2: go through all the sets, get or alloc layouts, and see if the descriptor sets are already in cache, by chance.
+		for (uint32_t setId = minSetId; setId <= maxSetId; ++setId) {
+			auto lb = std::lower_bound(std::begin(orderedBindings), std::end(orderedBindings), binding_data{ setId },
+				[](const binding_data& first, const binding_data& second) -> bool {
+					return first.mSetId < second.mSetId;
+				});
+			auto ub = std::upper_bound(std::begin(orderedBindings), std::end(orderedBindings), binding_data{ setId },
+				[](const binding_data& first, const binding_data& second) -> bool {
+					return first.mSetId < second.mSetId;
+				});
+
+			// Handle empty sets:
+			if (lb == ub) {
+				continue;
+			}
+
+			const auto& layout = get_or_alloc_layout(descriptor_set_layout::prepare(lb, ub));
+			layouts.emplace_back(layout);
+			auto preparedSet = descriptor_set::prepare(lb, ub);
+			auto cachedSet = get_descriptor_set_from_cache(preparedSet);
+			if (cachedSet.has_value()) {
+				auto& back = cachedSets.emplace_back(std::move(cachedSet.value()));
+				validSets.push_back(true);
+			}
+			else {
+				cachedSets.emplace_back();
+				validSets.push_back(false);
+			}
+			preparedSets.emplace_back(std::move(preparedSet));
+		}
+
+		if (static_cast<int>(cachedSets.size()) == std::count(std::begin(validSets), std::end(validSets), true)) {
+			// Everything is cached; we're done.
+			return cachedSets;
+		}
+
+		// HOWEVER, if not...
+		std::vector<std::reference_wrapper<const descriptor_set_layout>> layoutsForAlloc;
+		std::vector<descriptor_set> toBeAlloced;
+		std::vector<size_t> indexMapping;
+		for (size_t i = 0; i < cachedSets.size(); ++i) {
+			if (!validSets[i]) {
+				layoutsForAlloc.push_back(layouts[i]);
+				toBeAlloced.push_back(std::move(preparedSets[i]));
+				indexMapping.push_back(i);
+			}
+		}
+		auto nowAlsoInCache = alloc_new_descriptor_sets(layoutsForAlloc, std::move(toBeAlloced));
+		for (size_t i = 0; i < indexMapping.size(); ++i) {
+			cachedSets[indexMapping[i]] = nowAlsoInCache[i];
+		}
+		return cachedSets;
+	}
+
 	int descriptor_cache_t::remove_sets_with_handle(vk::ImageView aHandle)
 	{
 		int numDeleted = 0;
