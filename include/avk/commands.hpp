@@ -388,6 +388,44 @@ namespace avk
 			};
 		};
 
+		template <typename PL>
+		inline static state_type_command push_constants(const PL& aPipelineLayoutTuple, const void* aDataPtr, size_t aDataSize, std::optional<shader_type> aShaderStages = {})
+		{
+			std::optional<vk::ShaderStageFlags> stageFlags;
+			if (aShaderStages.has_value()) {
+				stageFlags = to_vk_shader_stages(aShaderStages.value());
+			}
+			if (!stageFlags.has_value()) {
+				auto pcRanges = std::get<const std::vector<vk::PushConstantRange>*>(aPipelineLayoutTuple);
+				for (auto& r : *pcRanges) {
+					if (r.size == aDataSize) {
+						stageFlags = r.stageFlags;
+						break;
+					}
+					// TODO: How to deal with push constants of same size and multiple vk::PushConstantRanges??
+				}
+				if (!stageFlags.has_value()) {
+					AVK_LOG_WARNING("No vk::PushConstantRange entry found that matches the dataSize[" + std::to_string(aDataSize) + "]");
+				}
+			}
+
+			return state_type_command{
+				[
+					lLayoutHandle = std::get<const vk::PipelineLayout>(aPipelineLayoutTuple),
+					lStageFlags = stageFlags.value_or(vk::ShaderStageFlagBits::eAll),
+					lDataSize = aDataSize,
+					aDataPtr
+				] (avk::command_buffer_t& cb) {
+					cb.handle().pushConstants(
+						lLayoutHandle,
+						lStageFlags,
+						0, // TODO: How to deal with offset?
+						lDataSize,
+						aDataPtr);
+				}
+			};
+		};
+
 		struct action_type_command final
 		{
 			//action_type_command(const action_type_command&) = delete;
