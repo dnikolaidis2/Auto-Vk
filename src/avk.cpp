@@ -807,7 +807,9 @@ namespace avk
 		avk::image_usage cleanedUpUsageFlagsForReadOnly = exclude(aImageUsageFlags, avk::image_usage::transfer_source | avk::image_usage::transfer_destination | avk::image_usage::sampled | avk::image_usage::read_only | avk::image_usage::presentable | avk::image_usage::shared_presentable | avk::image_usage::tiling_optimal | avk::image_usage::tiling_linear | avk::image_usage::sparse_memory_binding | avk::image_usage::cube_compatible | avk::image_usage::is_protected); // TODO: To be verified, it's just a guess.
 
 		auto targetLayout = isReadOnly ? vk::ImageLayout::eShaderReadOnlyOptimal : vk::ImageLayout::eGeneral; // General Layout or Shader Read Only Layout is the default
-		auto imageTiling = vk::ImageTiling::eOptimal; // Optimal is the default
+
+		bool tilingOptimal = avk::has_flag(aImageUsageFlags, avk::image_usage::tiling_optimal);
+		auto imageTiling = tilingOptimal ? vk::ImageTiling::eOptimal : vk::ImageTiling::eLinear; // Optimal is the default
 		vk::ImageCreateFlags imageCreateFlags{};
 
 		if (avk::has_flag(aImageUsageFlags, avk::image_usage::transfer_source)) {
@@ -4895,7 +4897,7 @@ namespace avk
 		return result;
 	}
 
-	image root::create_image(uint32_t aWidth, uint32_t aHeight, std::tuple<vk::Format, vk::SampleCountFlagBits> aFormatAndSamples, int aNumLayers, memory_usage aMemoryUsage, image_usage aImageUsage, std::function<void(image_t&)> aAlterConfigBeforeCreation)
+	image root::create_image(uint32_t aWidth, uint32_t aHeight, uint32_t aDepth, std::tuple<vk::Format, vk::SampleCountFlagBits> aFormatAndSamples, int aNumLayers, memory_usage aMemoryUsage, image_usage aImageUsage, std::function<void(image_t&)> aAlterConfigBeforeCreation)
 	{
 		// Determine image usage flags, image layout, and memory usage flags:
 		auto [imageUsage, targetLayout, imageTiling, imageCreateFlags] = determine_usage_layout_tiling_flags_based_on_image_usage(aImageUsage);
@@ -4955,8 +4957,8 @@ namespace avk
 		image_t result;
 		result.mRoot = this;
 		result.mCreateInfo = vk::ImageCreateInfo()
-			.setImageType(vk::ImageType::e2D) // TODO: Support 3D textures
-			.setExtent(vk::Extent3D(static_cast<uint32_t>(aWidth), static_cast<uint32_t>(aHeight), 1u))
+			.setImageType(aDepth > 1 ? vk::ImageType::e3D : vk::ImageType::e2D) // TODO: Support 3D textures
+			.setExtent(vk::Extent3D(static_cast<uint32_t>(aWidth), static_cast<uint32_t>(aHeight), static_cast<uint32_t>(aDepth)))
 			.setMipLevels(mipLevels)
 			.setArrayLayers(aNumLayers)
 			.setFormat(format)
@@ -4981,7 +4983,14 @@ namespace avk
 
 	image root::create_image(uint32_t aWidth, uint32_t aHeight, vk::Format aFormat, int aNumLayers, memory_usage aMemoryUsage, avk::image_usage aImageUsage, std::function<void(image_t&)> aAlterConfigBeforeCreation)
 	{
-		return create_image(aWidth, aHeight, std::make_tuple(aFormat, vk::SampleCountFlagBits::e1), aNumLayers, aMemoryUsage, aImageUsage, std::move(aAlterConfigBeforeCreation));
+		return create_image(aWidth, aHeight, 1u, std::make_tuple(aFormat, vk::SampleCountFlagBits::e1), aNumLayers, aMemoryUsage, aImageUsage, std::move(aAlterConfigBeforeCreation));
+	}
+
+	image root::create_image_3d(uint32_t aWidth, uint32_t aHeight, uint32_t aDepth, vk::Format aFormat, int aNumLayers,
+		memory_usage aMemoryUsage, avk::image_usage aImageUsage,
+		std::function<void(image_t&)> aAlterConfigBeforeCreation)
+	{
+		return create_image(aWidth, aHeight, aDepth, std::make_tuple(aFormat, vk::SampleCountFlagBits::e1), aNumLayers, aMemoryUsage, aImageUsage, std::move(aAlterConfigBeforeCreation));
 	}
 
 
