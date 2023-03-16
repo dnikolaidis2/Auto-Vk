@@ -834,6 +834,15 @@ namespace avk
 
 	// Add a resource binding to the pipeline config
 	template <typename... Ts>
+	void add_config(graphics_pipeline_config& aConfig, std::vector<avk::attachment>& aAttachments, std::function<void(graphics_pipeline_t&)>& aFunc, std::vector<binding_data> aResourceBindings, Ts... args)
+	{
+		std::ranges::transform(aResourceBindings, std::back_insert_iterator(aConfig.mResourceBindings), [](binding_data& binding ){ return std::move(binding); });
+		//aConfig.mResourceBindings.push_back(std::move(aResourceBinding));
+		add_config(aConfig, aAttachments, aFunc, std::move(args)...);
+	}
+
+	// Add a resource binding to the pipeline config
+	template <typename... Ts>
 	void add_config(graphics_pipeline_config& aConfig, std::vector<avk::attachment>& aAttachments, std::function<void(graphics_pipeline_t&)>& aFunc, binding_data aResourceBinding, Ts... args)
 	{
 		aConfig.mResourceBindings.push_back(std::move(aResourceBinding));
