@@ -4871,7 +4871,7 @@ namespace avk
 		return result;
 	}
 
-	image root::create_image(uint32_t aWidth, uint32_t aHeight, std::tuple<vk::Format, vk::SampleCountFlagBits> aFormatAndSamples, int aNumLayers, memory_usage aMemoryUsage, image_usage aImageUsage, std::function<void(image_t&)> aAlterConfigBeforeCreation)
+	image root::create_image(uint32_t aWidth, uint32_t aHeight, uint32_t aDepth, std::tuple<vk::Format, vk::SampleCountFlagBits> aFormatAndSamples, int aNumLayers, memory_usage aMemoryUsage, image_usage aImageUsage, std::function<void(image_t&)> aAlterConfigBeforeCreation)
 	{
 		// Determine image usage flags, image layout, and memory usage flags:
 		auto [imageUsage, targetLayout, imageTiling, imageCreateFlags] = determine_usage_layout_tiling_flags_based_on_image_usage(aImageUsage);
@@ -4908,6 +4908,7 @@ namespace avk
 
 		const auto format = std::get<vk::Format>(aFormatAndSamples);
 		const auto samples = std::get<vk::SampleCountFlagBits>(aFormatAndSamples);
+		const auto imageType = aDepth > 1 ? vk::ImageType::e3D : vk::ImageType::e2D;
 
 		if (avk::has_flag(imageUsage, vk::ImageUsageFlagBits::eDepthStencilAttachment) && vk::ImageTiling::eOptimal == imageTiling) { // only for AMD |-(
 			auto formatProps = physical_device().getFormatProperties(format);
@@ -4931,8 +4932,8 @@ namespace avk
 		image_t result;
 		result.mRoot = this;
 		result.mCreateInfo = vk::ImageCreateInfo()
-			.setImageType(vk::ImageType::e2D) // TODO: Support 3D textures
-			.setExtent(vk::Extent3D(static_cast<uint32_t>(aWidth), static_cast<uint32_t>(aHeight), 1u))
+			.setImageType(imageType)
+			.setExtent(vk::Extent3D(static_cast<uint32_t>(aWidth), static_cast<uint32_t>(aHeight), static_cast<uint32_t>(aDepth)))
 			.setMipLevels(mipLevels)
 			.setArrayLayers(aNumLayers)
 			.setFormat(format)
@@ -4957,7 +4958,14 @@ namespace avk
 
 	image root::create_image(uint32_t aWidth, uint32_t aHeight, vk::Format aFormat, int aNumLayers, memory_usage aMemoryUsage, avk::image_usage aImageUsage, std::function<void(image_t&)> aAlterConfigBeforeCreation)
 	{
-		return create_image(aWidth, aHeight, std::make_tuple(aFormat, vk::SampleCountFlagBits::e1), aNumLayers, aMemoryUsage, aImageUsage, std::move(aAlterConfigBeforeCreation));
+		return create_image(aWidth, aHeight, 1u, std::make_tuple(aFormat, vk::SampleCountFlagBits::e1), aNumLayers, aMemoryUsage, aImageUsage, std::move(aAlterConfigBeforeCreation));
+	}
+
+	image root::create_image(uint32_t aWidth, uint32_t aHeight, uint32_t aDepth, vk::Format aFormat, int aNumLayers,
+		memory_usage aMemoryUsage, avk::image_usage aImageUsage,
+		std::function<void(image_t&)> aAlterConfigBeforeCreation)
+	{
+		return create_image(aWidth, aHeight, aDepth, std::make_tuple(aFormat, vk::SampleCountFlagBits::e1), aNumLayers, aMemoryUsage, aImageUsage, std::move(aAlterConfigBeforeCreation));
 	}
 
 

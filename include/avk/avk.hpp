@@ -775,6 +775,7 @@ namespace avk
 		/** Creates a new image
 		 *	@param	aWidth						The width of the image to be created
 		 *	@param	aHeight						The height of the image to be created
+		 *	@param	aDepth						The depth of the image to be created
 		 *	@param	aFormatAndSamples			The image format and the number of samples of the image to be created
 		 *	@param	aMemoryUsage				Where the memory of the image shall be allocated (GPU or CPU) and how it is going to be used.
 		 *	@param	aImageUsage					How this image is intended to being used.
@@ -782,7 +783,7 @@ namespace avk
 		 *	@param	aAlterConfigBeforeCreation	A context-specific function which allows to modify the `vk::ImageCreateInfo` just before the image will be created. Use `.create_info()` to access the configuration structure!
 		 *	@return	Returns a newly created image.
 		 */
-		image create_image(uint32_t aWidth, uint32_t aHeight, std::tuple<vk::Format, vk::SampleCountFlagBits> aFormatAndSamples, int aNumLayers = 1, memory_usage aMemoryUsage = memory_usage::device, avk::image_usage aImageUsage = avk::image_usage::general_image, std::function<void(image_t&)> aAlterConfigBeforeCreation = {});
+		image create_image(uint32_t aWidth, uint32_t aHeight, uint32_t aDepth, std::tuple<vk::Format, vk::SampleCountFlagBits> aFormatAndSamples, int aNumLayers = 1, memory_usage aMemoryUsage = memory_usage::device, avk::image_usage aImageUsage = avk::image_usage::general_image, std::function<void(image_t&)> aAlterConfigBeforeCreation = {});
 
 		/** Creates a new image
 		 *	@param	aWidth						The width of the image to be created
@@ -795,6 +796,19 @@ namespace avk
 		 *	@return	Returns a newly created image.
 		 */
 		image create_image(uint32_t aWidth, uint32_t aHeight, vk::Format aFormat, int aNumLayers = 1, memory_usage aMemoryUsage = memory_usage::device, avk::image_usage aImageUsage = avk::image_usage::general_image, std::function<void(image_t&)> aAlterConfigBeforeCreation = {});
+
+		/** Creates a new image
+		 *	@param	aWidth						The width of the image to be created
+		 *	@param	aHeight						The height of the image to be created
+		 *	@param	aDepth						The depth of the image to be created
+		 *	@param	aFormat						The image format of the image to be created
+		 *	@param	aMemoryUsage				Where the memory of the image shall be allocated (GPU or CPU) and how it is going to be used.
+		 *	@param	aImageUsage					How this image is intended to being used.
+		 *	@param	aNumLayers					How many layers the image to be created shall contain.
+		 *	@param	aAlterConfigBeforeCreation	A context-specific function which allows to modify the `vk::ImageCreateInfo` just before the image will be created. Use `.create_info()` to access the configuration structure!
+		 *	@return	Returns a newly created image.
+		 */
+		image create_image(uint32_t aWidth, uint32_t aHeight, uint32_t aDepth, vk::Format aFormat, int aNumLayers = 1, memory_usage aMemoryUsage = memory_usage::device, avk::image_usage aImageUsage = avk::image_usage::general_image, std::function<void(image_t&)> aAlterConfigBeforeCreation = {});
 
 		/** Creates a new image
 		*	@param	aWidth						The width of the depth buffer to be created
