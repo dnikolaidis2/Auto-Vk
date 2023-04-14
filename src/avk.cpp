@@ -6108,7 +6108,6 @@ namespace avk
 			}
 
 			// Set that shader binding table groups information:
-			byteOffset += result.mShaderGroupHandleSize;
 			assert (group_type::none != curType);
 			if (curType == prevType) {
 				// same same is easy
@@ -6142,9 +6141,17 @@ namespace avk
 				}
 				curEdited->mByteOffset = byteOffset;
 			}
+
+			byteOffset += result.mShaderGroupHandleSize;
+
 			prevType = curType;
 			++groupOffset;
 		}
+
+		if (byteOffset % static_cast<vk::DeviceSize>(result.mShaderGroupBaseAlignment) != 0) {
+			byteOffset = (byteOffset / static_cast<vk::DeviceSize>(result.mShaderGroupBaseAlignment) + 1) * static_cast<vk::DeviceSize>(result.mShaderGroupBaseAlignment);
+		}
+
 		result.mShaderBindingTableGroupsInfo.mEndOffset = groupOffset;
 		result.mShaderBindingTableGroupsInfo.mTotalSize = byteOffset;
 
