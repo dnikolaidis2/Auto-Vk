@@ -2763,24 +2763,34 @@ namespace avk
 #pragma region buffer view definitions
 	vk::Buffer buffer_view_t::buffer_handle() const
 	{
-		if (std::holds_alternative<buffer>(mBuffer)) {
-			return std::get<buffer>(mBuffer)->handle();
+		if (std::holds_alternative<avk::buffer>(mBuffer)) {
+			return std::get<avk::buffer>(mBuffer)->handle();
 		}
 		return std::get<vk::Buffer>(std::get<std::tuple<vk::Buffer, vk::BufferCreateInfo>>(mBuffer));
 	}
 
+	avk::buffer buffer_view_t::buffer() const
+	{
+		if (std::holds_alternative<avk::buffer>(mBuffer))
+		{
+			return std::get<avk::buffer>(mBuffer);
+		}
+
+		throw avk::runtime_error("No buffer object available.");
+	}
+
 	const vk::BufferCreateInfo& buffer_view_t::buffer_create_info() const
 	{
-		if (std::holds_alternative<buffer>(mBuffer)) {
-			return std::get<buffer>(mBuffer)->create_info();
+		if (std::holds_alternative<avk::buffer>(mBuffer)) {
+			return std::get<avk::buffer>(mBuffer)->create_info();
 		}
 		return std::get<vk::BufferCreateInfo>(std::get<std::tuple<vk::Buffer, vk::BufferCreateInfo>>(mBuffer));
 	}
 
 	vk::DescriptorType buffer_view_t::descriptor_type(size_t aMetaDataIndex) const
 	{
-		if (std::holds_alternative<buffer>(mBuffer)) {
-			return std::get<buffer>(mBuffer)->meta_at_index<buffer_meta>(aMetaDataIndex).descriptor_type().value();
+		if (std::holds_alternative<avk::buffer>(mBuffer)) {
+			return std::get<avk::buffer>(mBuffer)->meta_at_index<buffer_meta>(aMetaDataIndex).descriptor_type().value();
 		}
 		throw avk::runtime_error("Which descriptor type?");
 	}

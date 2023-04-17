@@ -45,6 +45,7 @@ namespace avk
 
 		/** Gets the buffer handle which this view has been created for. */
 		vk::Buffer buffer_handle() const;
+		avk::buffer buffer() const;
 		/** Gets the buffer's config */
 		const vk::BufferCreateInfo& buffer_create_info() const;
 		
@@ -78,10 +79,10 @@ namespace avk
 		template <typename Meta>
 		auto get_buffer_view_descriptor() const
 		{
-			if (std::holds_alternative<buffer>(mBuffer)) {
+			if (std::holds_alternative<avk::buffer>(mBuffer)) {
 				buffer_view_descriptor_info result;
-				result.mDescriptorInfo = std::get<buffer>(mBuffer)->descriptor_info();
-				result.mDescriptorType = std::get<buffer>(mBuffer)->meta<Meta>().descriptor_type().value();
+				result.mDescriptorInfo = std::get<avk::buffer>(mBuffer)->descriptor_info();
+				result.mDescriptorType = std::get<avk::buffer>(mBuffer)->meta<Meta>().descriptor_type().value();
 				result.mBufferViewHandle = view_handle();
 				return result;
 			}
@@ -96,7 +97,7 @@ namespace avk
 	private:
 		
 		// Owning XOR non-owning handle to a buffer.
-		std::variant<buffer, std::tuple<vk::Buffer, vk::BufferCreateInfo>> mBuffer;
+		std::variant<avk::buffer, std::tuple<vk::Buffer, vk::BufferCreateInfo>> mBuffer;
 		// Config which is passed to the create call and contains all the parameters for buffer view creation.
 		vk::BufferViewCreateInfo mCreateInfo;
 		// The image view's handle. This member will contain a valid handle only after successful image view creation.
